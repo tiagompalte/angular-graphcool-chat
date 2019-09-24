@@ -28,17 +28,17 @@ functions:
     handler:
       code: src/email-password/signup.ts
 
-#   authenticate:
-#     type: resolver
-#     schema: src/email-password/authenticate.graphql
-#     handler:
-#       code: src/email-password/authenticate.ts
-#
-#   loggedInUser:
-#     type: resolver
-#     schema: src/email-password/loggedInUser.graphql
-#     handler:
-#       code: src/email-password/loggedInUser.ts
+  authenticate:
+    type: resolver
+    schema: src/email-password/authenticate.graphql
+    handler:
+      code: src/email-password/authenticate.ts
+
+  loggedInUser:
+    type: resolver
+    schema: src/email-password/loggedInUser.graphql
+    handler:
+      code: src/email-password/loggedInUser.ts
 
 # Model/Relation permissions are used to limit the API access
 # To take the burden of thinking about those while development, we
@@ -46,8 +46,80 @@ functions:
 # Read more here:
 # https://www.graph.cool/docs/reference/auth/authorization/overview-iegoo0heez
 permissions:
-  - operation: "*"
 
+  # User
+  - operation: User.read
+    fields: [id, password]
+
+  - operation: User.create
+    fields: [name, email, password]
+
+  - operation: User.read
+    authenticated: true
+    query: src/permissions/User.graphql
+
+  - operation: User.read
+    fields: [name, email, createdAt, updatedAt, photo]
+    authenticated: true
+
+  - operation: User.update
+    authenticated: true
+    query: src/permissions/User.graphql
+
+  - operation: User.update
+    authenticated: true
+    fields: [photo]
+
+  - operation: User.delete
+    authenticated: true
+    query: src/permissions/User.graphql
+
+  # Chat
+  - operation: Chat.create
+    authenticated: true
+  - operation: Chat.read
+    authenticated: true
+  - operation: Chat.update
+    authenticated: true
+  - operation: Chat.delete
+    authenticated: true
+
+  # Message
+  - operation: Message.create
+    authenticated: true
+  - operation: Message.read
+    authenticated: true
+  - operation: Message.update
+    authenticated: true
+  - operation: Message.delete
+    authenticated: true
+
+  # File
+  - operation: File.create
+    authenticated: true
+  - operation: File.read
+    authenticated: true
+  - operation: File.update
+    authenticated: true
+  - operation: File.delete
+    authenticated: true
+
+  # Relations
+  - operation: UsersOnChats.connect
+    authenticated: true
+  - operation: UsersOnChats.disconnect
+    authenticated: true
+
+  - operation: MessagesOnChat.connect
+    authenticated: true
+
+  - operation: MessagesOnUser.connect
+    authenticated: true
+
+  - operation: ChatPhoto.connect
+    authenticated: true
+  - operation: ChatPhoto.disconnect
+    authenticated: true
 
 # Your root tokens used for functions to get full access to the API
 # Read more here:
