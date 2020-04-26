@@ -1,0 +1,53 @@
+<div class="login-container">
+  <mat-card>
+    <mat-card-title>
+      <mat-toolbar color="primary">
+        <span>{{configs.actionText}}</span>
+        <span class="spacer"></span>
+        <mat-spinner *ngIf="configs.isLoading" diameter="25" strokeWidth="2"></mat-spinner>
+      </mat-toolbar>
+    </mat-card-title>
+
+    <mat-card-content>
+      <form (submit)="onSubmit()" [formGroup]="loginForm">
+
+        <mat-form-field *ngIf="!configs.isLogin">
+          <input matInput type="text" placeholder="Name" formControlName="name">
+          <mat-error *ngIf="loginForm.get('name').hasError('required')">
+            This field is required
+          </mat-error>
+          <mat-error *ngIf="loginForm.get('name').hasError('minlength')">
+            Enter at least 5 characters
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field>
+          <input matInput type="text" placeholder="Email" formControlName="email">
+          <mat-error *ngIf="loginForm.get('email').hasError('required')">
+            This field is required
+          </mat-error>
+          <mat-error *ngIf="loginForm.get('email').hasError('email')">
+            Please enter a valid email address
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field>
+          <input matInput type="password" placeholder="Password" formControlName="password">
+          <mat-error *ngIf="loginForm.get('password').hasError('required')">
+            This field is required
+          </mat-error>
+          <mat-error *ngIf="loginForm.get('password').hasError('minlength')">
+            Enter at least 5 characters
+          </mat-error>
+        </mat-form-field>
+
+        <mat-slide-toggle [checked]="authService.keepSigned" (change)="onKeepSigned()">Keep me signed in</mat-slide-toggle>
+
+        <button type="submit" mat-button color="primary" [disabled]="loginForm.invalid">{{configs.actionText}}</button>
+
+        <button type="button" mat-button color="primary" (click)="changeAction()">{{configs.buttonActionText}}</button>
+
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

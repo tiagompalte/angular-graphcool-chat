@@ -1,52 +1,26 @@
-import { Component } from '@angular/core';
-import { Apollo } from 'apollo-angular';
-import gql from 'graphql-tag';
+import {Component, OnInit} from '@angular/core';
+import {AuthService} from './core/services/auth.service';
+import {take} from 'rxjs/operators';
+import {ErrorService} from './core/services/error.service';
+import {MatSnackBar} from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss']
+  template: '<router-outlet></router-outlet>',
 })
-export class AppComponent {
-
+export class AppComponent implements OnInit {
   constructor(
-    private apollo: Apollo
+    private errorService: ErrorService,
+    private authService: AuthService,
+    private snackBar: MatSnackBar
   ) {
-    this.allUsers();
-    //this.createUser();
   }
 
-  allUsers(): void {
-    this.apollo.query({
-      query: gql`
-        query {
-          allUsers {
-            id
-            name
-            email
-          }
-        }
-      `
-    }).subscribe(res => console.log(res));
-  }
-
-  createUser() {
-    this.apollo.mutate({
-      mutation: gql`
-        mutation CreateNewUser($name: String!, $email: String!, $password: String!) {
-          createUser(name: $name, email: $email, password: $password) {
-            id
-            name
-            email
-          }
-        }
-      `,
-      variables: {
-        name: 'Iron Man',
-        email: 'ironman@avengers.com',
-        password: '123456'
-      }
-    }).subscribe(res => console.log(res));
+  ngOnInit(): void {
+    this.authService.autoLogin().pipe(take(1)).subscribe(null, error => {
+      const message = this.errorService.getErrorMessage(error);
+      this.snackBar.open(`Unexpected error: ${message}`, 'Done', {duration: 5000, verticalPosition: 'top'})
+    });
   }
 
 }
