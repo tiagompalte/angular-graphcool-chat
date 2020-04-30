@@ -3,6 +3,7 @@ import {Routes, RouterModule} from "@angular/router";
 import {DashboardHomeComponent} from "./components/dashboard-home/dashboard-home.component";
 import {AuthGuard} from "../login/auth.guard";
 import {DashboardResourcesComponent} from './components/dashboard-resources/dashboard-resources.component';
+import {ChatModule} from '../chat/chat.module';
 
 const routes: Routes = [
   {
@@ -10,7 +11,8 @@ const routes: Routes = [
     component: DashboardHomeComponent,
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
-    children:[
+    children: [
+      {path: 'chat', loadChildren: () => ChatModule, canLoad: [AuthGuard]},
       {path: '', component: DashboardResourcesComponent}
     ]
   }
