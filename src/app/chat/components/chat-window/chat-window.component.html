@@ -1,0 +1,38 @@
+<section class="content">
+
+  <ng-container *ngIf="messages$ | async as messages; else loadingMessages">
+    <ng-container *ngIf="messages.length > 0; else noMessages">
+      <app-chat-message
+        *ngFor="let m of messages; trackBy: trackByFn"
+        [message]="m"
+        [isFromSender]="m.sender.id === authService.authUser.id"
+      ></app-chat-message>
+    </ng-container>
+  </ng-container>
+
+  <ng-template #loadingMessages>
+    <mat-spinner class="spinner" diameter="50" strokeWidth="3">
+    </mat-spinner>
+  </ng-template>
+
+  <ng-template #noMessages>
+    <app-no-record icon="message" title="No messages"></app-no-record>
+  </ng-template>
+
+</section>
+
+<mat-toolbar class="footer" color="primary">
+  <mat-toolbar-row>
+    <input
+      class="input"
+      type="text"
+      [(ngModel)]="newMessage"
+      (keyup.enter)="sendMessage()"
+      placeholder="Type a message"
+    />
+    <span class="spacer"></span>
+    <button mat-icon-button (click)="sendMessage()">
+      <mat-icon>send</mat-icon>
+    </button>
+  </mat-toolbar-row>
+</mat-toolbar>

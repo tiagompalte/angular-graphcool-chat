@@ -4,6 +4,8 @@ import {ChatTabComponent} from './components/chat-tab/chat-tab.component';
 import {AuthGuard} from '../login/auth.guard';
 import {ChatUsersComponent} from './components/chat-users/chat-users.component';
 import {ChatListComponent} from './components/chat-list/chat-list.component';
+import {ChatWindowComponent} from './components/chat-window/chat-window.component';
+import {ChatWindowResolver} from './components/chat-window/chat-window.resolver';
 
 const routes: Routes = [
   {
@@ -15,12 +17,16 @@ const routes: Routes = [
       {path: 'users', component: ChatUsersComponent},
       {path: '', component: ChatListComponent}
     ]
+  },
+  {
+    path: ':id', component: ChatWindowComponent, canActivate: [AuthGuard], resolve: {chat: ChatWindowResolver}
   }
 ];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
+  providers: [ChatWindowResolver]
 })
 export class ChatRoutingModule {
 }

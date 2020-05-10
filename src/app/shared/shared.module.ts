@@ -5,7 +5,7 @@ import {MatToolbarModule} from '@angular/material/toolbar';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
 import {MatButtonModule} from '@angular/material/button';
-import {ReactiveFormsModule} from '@angular/forms';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatSnackBarModule} from '@angular/material/snack-bar';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
@@ -15,6 +15,8 @@ import {MatLineModule} from '@angular/material/core';
 import {MatSidenavModule} from '@angular/material/sidenav';
 import {MatTabsModule} from '@angular/material/tabs';
 import {NoRecordComponent} from './components/no-record/no-record.component';
+import { AvatarComponent } from './components/avatar/avatar.component';
+import { FromNowPipe } from './pipes/from-now.pipe';
 
 @NgModule({
   exports: [
@@ -33,12 +35,16 @@ import {NoRecordComponent} from './components/no-record/no-record.component';
     MatLineModule,
     MatSidenavModule,
     MatTabsModule,
-    NoRecordComponent
+    NoRecordComponent,
+    FormsModule,
+    AvatarComponent,
+    FromNowPipe
   ],
   imports: [
+    CommonModule,
     MatIconModule
   ],
-  declarations: [NoRecordComponent]
+  declarations: [NoRecordComponent, AvatarComponent, FromNowPipe]
 })
 export class SharedModule {
 }
