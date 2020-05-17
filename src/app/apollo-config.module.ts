@@ -9,6 +9,7 @@ import {onError} from 'apollo-link-error';
 import {ApolloLink} from 'apollo-link';
 import {StorageKeys} from './storage-keys';
 import {GRAPHCOOL_CONFIG, GraphcoolConfig} from './core/providers/graphcool.config';
+import {persistCache} from 'apollo-cache-persist';
 
 @NgModule({
   imports: [
@@ -50,12 +51,19 @@ export class ApolloConfigModule {
       }
     });
 
+    const cache = new InMemoryCache();
+
+    persistCache({
+      cache,
+      storage: window.localStorage
+    }).catch(err => console.log(`Error while persisting cache: ${err}`));
+
     apollo.create({
       link: ApolloLink.from([
         linkError,
         authMiddleware.concat(http)
       ]),
-      cache: new InMemoryCache(),
+      cache,
       connectToDevTools: !environment.production
     })
   }

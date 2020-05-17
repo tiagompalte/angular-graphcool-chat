@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { Observable } from "rxjs";
+import { Observable, Subscription } from "rxjs";
 import { Chat } from "../models/chat.model";
 import { Apollo } from "apollo-angular";
 import { AuthService } from "../../core/services/auth.service";
@@ -11,22 +11,40 @@ import {
   USER_CHATS_QUERY
 } from "./chat.graphql";
 import { map } from "rxjs/operators";
+import { NavigationEnd, Router } from "@angular/router";
 
 @Injectable({
   providedIn: "root"
 })
 export class ChatService {
-  constructor(private apollo: Apollo, private authService: AuthService) {}
+  chats$: Observable<Chat[]>;
+  private subscription: Subscription[] = [];
+
+  constructor(
+    private apollo: Apollo,
+    private authService: AuthService,
+    private router: Router
+  ) {}
+
+  startChatsMonitoring(): void {
+    this.chats$ = this.getUserChats();
+    this.subscription.push(this.chats$.subscribe());
+    this.router.events.subscribe(event => {
+      if (event instanceof NavigationEnd && !this.router.url.includes("chat")) {
+        this.onDestroy();
+      }
+    });
+  }
 
   getUserChats(): Observable<Chat[]> {
     return this.apollo
-      .query<AllChatsQuery>({
+      .watchQuery<AllChatsQuery>({
         query: USER_CHATS_QUERY,
         variables: {
           loggedUserId: this.authService.authUser.id
         }
       })
-      .pipe(
+      .valueChanges.pipe(
         map(res => res.data.allChats),
         map((chats: Chat[]) => {
           const chatsToOrder = chats.slice();
@@ -69,8 +87,50 @@ export class ChatService {
         variables: {
           loggedUserId: this.authService.authUser.id,
           targetUserId
+        },
+        update: (store, { data: { createChat } }) => {
+          const userChatsVariables = {
+            loggedUserId: this.authService.authUser.id
+          };
+
+          const userChatsData = store.readQuery<AllChatsQuery>({
+            query: USER_CHATS_QUERY,
+            variables: userChatsVariables
+          });
+
+          userChatsData.allChats = [createChat, ...userChatsData.allChats];
+
+          store.writeQuery({
+            query: USER_CHATS_QUERY,
+            variables: userChatsVariables,
+            data: userChatsData
+          });
+
+          const variables = {
+            chatId: targetUserId,
+            loggedUserId: this.authService.authUser.id,
+            targetUserId
+          };
+
+          const data = store.readQuery<AllChatsQuery>({
+            query: CHAT_BY_ID_OR_BY_USERS_QUERY,
+            variables
+          });
+
+          data.allChats = [createChat];
+
+          store.writeQuery({
+            query: CHAT_BY_ID_OR_BY_USERS_QUERY,
+            variables,
+            data
+          });
         }
       })
       .pipe(map(res => res.data.createChat));
+  }
+
+  private onDestroy() {
+    this.subscription.forEach(s => s.unsubscribe());
+    this.subscription = [];
   }
 }

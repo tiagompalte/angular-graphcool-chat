@@ -2,7 +2,8 @@ import { Pipe, PipeTransform } from "@angular/core";
 import { AppConfigService } from "../../core/services/app-config.service";
 
 @Pipe({
-  name: "fromNow"
+  name: "fromNow",
+  pure: false
 })
 export class FromNowPipe implements PipeTransform {
   constructor(private appConfigService: AppConfigService) {}

@@ -1,27 +1,43 @@
-import {Component, OnDestroy, OnInit} from "@angular/core";
-import {ActivatedRoute, ParamMap} from "@angular/router";
-import {Chat} from "../../models/chat.model";
-import {Observable, of, Subscription} from "rxjs";
-import {map, mergeMap, take, tap} from "rxjs/operators";
-import {Title} from "@angular/platform-browser";
-import {UserService} from "../../../core/services/user.service";
-import {User} from "../../../core/models/user.model";
-import {Message} from "../../models/message.model";
-import {MessageService} from "../../services/message.service";
-import {AuthService} from "../../../core/services/auth.service";
-import {ChatService} from "../../services/chat.service";
-import {BaseComponent} from '../../../shared/components/base.component';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  QueryList,
+  ViewChild,
+  ViewChildren
+} from "@angular/core";
+import { ActivatedRoute, ParamMap } from "@angular/router";
+import { Chat } from "../../models/chat.model";
+import { Observable, of, Subscription } from "rxjs";
+import { map, mergeMap, take, tap } from "rxjs/operators";
+import { Title } from "@angular/platform-browser";
+import { UserService } from "../../../core/services/user.service";
+import { User } from "../../../core/models/user.model";
+import { Message } from "../../models/message.model";
+import { MessageService } from "../../services/message.service";
+import { AuthService } from "../../../core/services/auth.service";
+import { ChatService } from "../../services/chat.service";
+import { BaseComponent } from "../../../shared/components/base.component";
+import { ChatMessageComponent } from "../chat-message/chat-message.component";
 
 @Component({
   selector: "app-chat-window",
   templateUrl: "./chat-window.component.html",
   styleUrls: ["./chat-window.component.scss"]
 })
-export class ChatWindowComponent extends BaseComponent<Message> implements OnInit, OnDestroy {
+export class ChatWindowComponent extends BaseComponent<Message>
+  implements AfterViewInit, OnInit, OnDestroy {
+  @ViewChild("content", { static: false }) private content: ElementRef;
+  @ViewChildren(ChatMessageComponent) private messagesQueryList: QueryList<
+    ChatMessageComponent
+  >;
   chat: Chat;
   messages$: Observable<Message[]>;
   newMessage = "";
   recipientId: string = null;
+  alreadyLoaderMessages = false;
   private subscriptions: Subscription[] = [];
 
   constructor(
@@ -55,6 +71,7 @@ export class ChatWindowComponent extends BaseComponent<Message> implements OnIni
               this.messages$ = this.messageService.getChatMessages(
                 this.chat.id
               );
+              this.alreadyLoaderMessages = true;
             }
           })
         )
@@ -67,29 +84,60 @@ export class ChatWindowComponent extends BaseComponent<Message> implements OnIni
     this.title.setTitle("Angular Graphcool Chat");
   }
 
+  ngAfterViewInit() {
+    this.subscriptions.push(
+      this.messagesQueryList.changes.subscribe(() => {
+        this.scrollToBottom("smooth");
+      })
+    );
+  }
+
   sendMessage(): void {
     this.newMessage = this.newMessage.trim();
     if (this.newMessage) {
       if (this.chat) {
-        this.messageService
-          .createMessage({
-            text: this.newMessage,
-            chatId: this.chat.id,
-            senderId: this.authService.authUser.id
-          }).pipe(take(1)).subscribe();
-        this.newMessage = '';
+        this.createMessage()
+          .pipe(take(1))
+          .subscribe();
+        this.newMessage = "";
       } else {
         this.createPrivateChat();
       }
     }
   }
 
-  private createPrivateChat() {
-    this.chatService.createPrivateChat(this.recipientId).pipe(
-      tap((chat: Chat) => {
-        this.chat = chat;
-        this.sendMessage();
+  private createMessage(): Observable<Message> {
+    return this.messageService
+      .createMessage({
+        text: this.newMessage,
+        chatId: this.chat.id,
+        senderId: this.authService.authUser.id
       })
-    ).subscribe();
+      .pipe(
+        tap(() => {
+          if (this.alreadyLoaderMessages) {
+            this.messages$ = this.messageService.getChatMessages(this.chat.id);
+            this.alreadyLoaderMessages = true;
+          }
+        })
+      );
+  }
+
+  private createPrivateChat() {
+    this.chatService
+      .createPrivateChat(this.recipientId)
+      .pipe(
+        tap((chat: Chat) => {
+          this.chat = chat;
+          this.sendMessage();
+        })
+      )
+      .subscribe();
+  }
+
+  private scrollToBottom(behavior = "auto", block = "end") {
+    setTimeout(() => {
+      this.content.nativeElement.scrollIntoView({ behavior, block });
+    }, 0);
   }
 }
