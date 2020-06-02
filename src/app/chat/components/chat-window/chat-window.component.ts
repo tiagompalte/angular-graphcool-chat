@@ -52,6 +52,8 @@ export class ChatWindowComponent extends BaseComponent<Message>
   }
 
   ngOnInit() {
+    this.chatService.startChatsMonitoring();
+    this.userService.startUsersMonitoring(this.authService.authUser.id);
     this.title.setTitle("Loading...");
     this.subscriptions.push(
       this.route.data

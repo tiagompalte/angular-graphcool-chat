@@ -1,13 +1,13 @@
-import { Injectable } from "@angular/core";
-import { Apollo } from "apollo-angular";
-import { Observable } from "rxjs";
-import { Message } from "../models/message.model";
+import {Injectable} from "@angular/core";
+import {Apollo} from "apollo-angular";
+import {Observable} from "rxjs";
+import {Message} from "../models/message.model";
 import {
   AllMessagesQuery,
   CREATE_MESSAGE_MUTATION,
   GET_CHAT_MESSAGES_QUERY
 } from "./message.graphql";
-import { map } from "rxjs/operators";
+import {map} from "rxjs/operators";
 import {AllChatsQuery, USER_CHATS_QUERY} from './chat.graphql';
 import {AuthService} from '../../core/services/auth.service';
 
@@ -15,7 +15,8 @@ import {AuthService} from '../../core/services/auth.service';
   providedIn: "root"
 })
 export class MessageService {
-  constructor(private apollo: Apollo, private authService: AuthService) {}
+  constructor(private apollo: Apollo, private authService: AuthService) {
+  }
 
   getChatMessages(chatId: string): Observable<Message[]> {
     return this.apollo
@@ -23,7 +24,8 @@ export class MessageService {
         query: GET_CHAT_MESSAGES_QUERY,
         variables: {
           chatId
-        }
+        },
+        fetchPolicy: 'network-only'
       })
       .valueChanges.pipe(map(res => res.data.allMessages));
   }
@@ -57,7 +59,7 @@ export class MessageService {
             }
           }
         },
-        update: (store, { data: { createMessage } }) => {
+        update: (store, {data: {createMessage}}) => {
           try {
             const data = store.readQuery<AllMessagesQuery>({
               query: GET_CHAT_MESSAGES_QUERY,

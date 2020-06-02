@@ -24,8 +24,8 @@ const ChatFragment = gql`
   }
 `;
 
-const ChatMessageFragment = gql`
-  fragment ChatMessageFragment on Chat {
+const ChatMessagesFragment = gql`
+  fragment ChatMessagesFragment on Chat {
     messages(last: 1) {
       id
       text
@@ -41,11 +41,11 @@ export const USER_CHATS_QUERY = gql`
   query UserChatQuery($userId: ID!) {
     allChats(filter: { users_some: { id: $loggedUserId } }) {
       ...ChatFragment
-      ...ChatMessageFragment
+      ...ChatMessagesFragment
     }
   }
   ${ChatFragment}
-  ${ChatMessageFragment}
+  ${ChatMessagesFragment}
 `;
 
 export const CHAT_BY_ID_OR_BY_USERS_QUERY = gql`
@@ -77,9 +77,32 @@ export const CREATE_PRIVATE_CHAT_MUTATION = gql`
   mutation CreatePrivateChatMutation($loggedUserId: ID!, $targetUserId: ID!) {
     createChat(userIds: [$loggedUserId, $targetUserId]) {
       ...ChatFragment
-      ...ChatMessageFragment
+      ...ChatMessagesFragment
     }
   }
   ${ChatFragment}
-  ${ChatMessageFragment}
+  ${ChatMessagesFragment}
+`;
+
+export const USER_CHATS_SUBSCRIPTION = gql`
+  subscription UserChatsSubscription($loggedUserId: ID!) {
+    Chat(
+      filter: {
+        mutation_in: [ CREATED, UPDATED ],
+        node: {
+          users_some: {
+            id: $loggedUserId
+          }
+        }
+      }
+    ) {
+      mutation
+      node {
+        ...ChatFragment
+        ...ChatMessagesFragment
+      }
+    }
+  }
+  ${ChatFragment}
+  ${ChatMessagesFragment}
 `;
