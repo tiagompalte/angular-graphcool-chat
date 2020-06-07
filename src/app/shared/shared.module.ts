@@ -17,6 +17,8 @@ import {MatTabsModule} from '@angular/material/tabs';
 import {NoRecordComponent} from './components/no-record/no-record.component';
 import { AvatarComponent } from './components/avatar/avatar.component';
 import { FromNowPipe } from './pipes/from-now.pipe';
+import {MatMenuModule} from '@angular/material/menu';
+import {MatDialogModule} from '@angular/material/dialog';
 
 @NgModule({
   exports: [
@@ -38,7 +40,9 @@ import { FromNowPipe } from './pipes/from-now.pipe';
     NoRecordComponent,
     FormsModule,
     AvatarComponent,
-    FromNowPipe
+    FromNowPipe,
+    MatMenuModule,
+    MatDialogModule
   ],
   imports: [
     CommonModule,

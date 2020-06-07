@@ -1,25 +1,32 @@
-import {Injectable} from "@angular/core";
-import {Observable, Subscription} from "rxjs";
-import {Chat} from "../models/chat.model";
-import {Apollo, QueryRef} from "apollo-angular";
-import {AuthService} from "../../core/services/auth.service";
+import { Injectable } from "@angular/core";
+import { Observable, Subscription } from "rxjs";
+import { Chat } from "../models/chat.model";
+import { Apollo, QueryRef } from "apollo-angular";
+import { AuthService } from "../../core/services/auth.service";
 import {
   AllChatsQuery,
   CHAT_BY_ID_OR_BY_USERS_QUERY,
   ChatQuery,
+  CREATE_GROUP_MUTATION,
   CREATE_PRIVATE_CHAT_MUTATION,
-  USER_CHATS_QUERY, USER_CHATS_SUBSCRIPTION
+  USER_CHATS_QUERY,
+  USER_CHATS_SUBSCRIPTION
 } from "./chat.graphql";
-import {map} from "rxjs/operators";
-import {NavigationEnd, Router} from "@angular/router";
-import {AllMessagesQuery, GET_CHAT_MESSAGES_QUERY, USER_MESSAGES_SUBSCRIPTION} from "./message.graphql";
-import {Message} from "../models/message.model";
-import {UserService} from '../../core/services/user.service';
+import { map } from "rxjs/operators";
+import { NavigationEnd, Router } from "@angular/router";
+import {
+  AllMessagesQuery,
+  GET_CHAT_MESSAGES_QUERY,
+  USER_MESSAGES_SUBSCRIPTION
+} from "./message.graphql";
+import { Message } from "../models/message.model";
+import { UserService } from "../../core/services/user.service";
+import {BaseService} from '../../core/services/base.service';
 
 @Injectable({
   providedIn: "root"
 })
-export class ChatService {
+export class ChatService extends BaseService {
   chats$: Observable<Chat[]>;
   private queryRef: QueryRef<AllChatsQuery>;
   private subscription: Subscription[] = [];
@@ -30,6 +37,7 @@ export class ChatService {
     private router: Router,
     private userService: UserService
   ) {
+    super();
   }
 
   startChatsMonitoring(): void {
@@ -38,7 +46,10 @@ export class ChatService {
       this.subscription.push(this.chats$.subscribe());
       this.subscription.push(
         this.router.events.subscribe(event => {
-          if (event instanceof NavigationEnd && !this.router.url.includes("chat")) {
+          if (
+            event instanceof NavigationEnd &&
+            !this.router.url.includes("chat")
+          ) {
             this.stopChatsMonitoring();
             this.userService.stopUserMonitoring();
           }
@@ -66,8 +77,11 @@ export class ChatService {
       variables: {
         loggedUserId: this.authService.authUser.id
       },
-      updateQuery: (previous: AllChatsQuery, {subscriptionData}): AllChatsQuery => {
-        const newChat: Chat = new subscriptionData.data["Chat"].node;
+      updateQuery: (
+        previous: AllChatsQuery,
+        { subscriptionData }
+      ): AllChatsQuery => {
+        const newChat: Chat = new subscriptionData.data["Chat"].node();
         if (previous.allChats.every(chat => chat.id !== newChat.id)) {
           return {
             ...previous,
@@ -85,18 +99,21 @@ export class ChatService {
       },
       updateQuery: (
         previous: AllChatsQuery,
-        {subscriptionData}
+        { subscriptionData }
       ): AllChatsQuery => {
         const newMessage: Message = subscriptionData.data["Message"].node;
         try {
           if (newMessage.sender.id !== this.authService.authUser.id) {
             const apolloClient = this.apollo.getClient();
-            const chatMessageVariables = {chatId: newMessage.chat.id};
+            const chatMessageVariables = { chatId: newMessage.chat.id };
             const chatMessagesData = apolloClient.readQuery<AllMessagesQuery>({
               query: GET_CHAT_MESSAGES_QUERY,
               variables: chatMessageVariables
             });
-            chatMessagesData.allMessages = [...chatMessagesData.allMessages, newMessage];
+            chatMessagesData.allMessages = [
+              ...chatMessagesData.allMessages,
+              newMessage
+            ];
             apolloClient.writeQuery({
               query: GET_CHAT_MESSAGES_QUERY,
               variables: chatMessageVariables,
@@ -111,13 +128,16 @@ export class ChatService {
           : -1;
         if (chatToUpdateIndex > -1) {
           const newAllChats = [...previous.allChats];
-          const chatToUpdate: Chat = Object.assign({}, newAllChats[chatToUpdateIndex]);
+          const chatToUpdate: Chat = Object.assign(
+            {},
+            newAllChats[chatToUpdateIndex]
+          );
           chatToUpdate.messages = [newMessage];
           newAllChats[chatToUpdateIndex] = chatToUpdate;
           return {
             ...previous,
             allChats: newAllChats
-          }
+          };
         }
         return previous;
       }
@@ -167,45 +187,79 @@ export class ChatService {
           loggedUserId: this.authService.authUser.id,
           targetUserId
         },
-        update: (store, {data: {createChat}}) => {
-          const userChatsVariables = {
-            loggedUserId: this.authService.authUser.id
-          };
+        update: (store, { data: { createChat } }) => {
 
-          const userChatsData = store.readQuery<AllChatsQuery>({
+          this.readAndWriteQuery<Chat>({
+            store,
+            newRecord: createChat,
             query: USER_CHATS_QUERY,
-            variables: userChatsVariables
+            queryName: 'allChats',
+            arrayOperation: 'unshift',
+            variables: {loggedUserId: this.authService.authUser.id}
           });
 
-          userChatsData.allChats = [createChat, ...userChatsData.allChats];
-
-          store.writeQuery({
-            query: USER_CHATS_QUERY,
-            variables: userChatsVariables,
-            data: userChatsData
-          });
-
-          const variables = {
-            chatId: targetUserId,
-            loggedUserId: this.authService.authUser.id,
-            targetUserId
-          };
-
-          const data = store.readQuery<AllChatsQuery>({
+          this.readAndWriteQuery<Chat>({
+            store,
+            newRecord: createChat,
             query: CHAT_BY_ID_OR_BY_USERS_QUERY,
-            variables
-          });
-
-          data.allChats = [createChat];
-
-          store.writeQuery({
-            query: CHAT_BY_ID_OR_BY_USERS_QUERY,
-            variables,
-            data
+            queryName: 'allChats',
+            arrayOperation: 'singleRecord',
+            variables: {
+              chatId: targetUserId,
+              loggedUserId: this.authService.authUser.id,
+              targetUserId
+            }
           });
         }
       })
       .pipe(map(res => res.data.createChat));
   }
 
+  createGroup(variables: {
+    title: string;
+    usersIds: string[];
+  }): Observable<Chat> {
+    variables.usersIds.push(this.authService.authUser.id);
+    return this.apollo
+      .mutate({
+        mutation: CREATE_GROUP_MUTATION,
+        variables: {
+          ...variables,
+          loggedUserId: this.authService.authUser.id
+        },
+        optimisticResponse:{
+          __typename: 'Mutation',
+          createChat: {
+            __typename: 'Chat',
+            id: '',
+            title: variables.title,
+            createdAt: new Date().toISOString(),
+            isGroup: true,
+            users: [
+              {
+                __typename: 'User',
+                id: '',
+                name: '',
+                email: '',
+                createdAt: new Date().toISOString()
+              }
+            ],
+            messages: []
+          }
+        },
+        update: (store, { data: { createChat } }) => {
+
+          this.readAndWriteQuery<Chat>({
+            store,
+            newRecord: createChat,
+            query: USER_CHATS_QUERY,
+            queryName: 'allChats',
+            arrayOperation: 'unshift',
+            variables: {loggedUserId: this.authService.authUser.id}
+          });
+
+        }
+      })
+      .pipe(map(res => res.data.createChat));
+  }
 }

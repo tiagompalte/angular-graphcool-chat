@@ -5,7 +5,7 @@
       <a mat-list-item [routerLink]="[chat.id]" *ngFor="let chat of chats; trackBy: trackByFn">
         <app-avatar
           matListAvatar
-          [src]="'assets/images/user-no-photo.png'"
+          [src]="getChatImage(chat)"
           [title]="getChatTitle(chat)"
           [containerStyles]="{ width: '40px', height: '40px', margin: 0 }"
         ></app-avatar>
@@ -27,4 +27,13 @@
   <app-no-record icon="chat_bubble" title="No chats"></app-no-record>
 </ng-template>
 
+<button mat-fab class="fab-bottom-right" [matMenuTriggerFor]="chatListOptions">
+  <mat-icon>add</mat-icon>
+</button>
 
+<mat-menu #chatListOptions="matMenu" [overlapTrigger]="false">
+  <button mat-menu-item (click)="onAddGroup()">
+    <mat-icon>group_add</mat-icon>
+    <span>New group</span>
+  </button>
+</mat-menu>
