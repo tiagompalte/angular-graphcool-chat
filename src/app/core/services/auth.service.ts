@@ -1,18 +1,14 @@
-import { Injectable } from "@angular/core";
-import { Observable, of, ReplaySubject, throwError } from "rxjs";
-import { Apollo } from "apollo-angular";
-import {
-  AUTHENTICATE_USE_MUTATION,
-  LOGGED_IN_USER_QUERY,
-  LoggedInUserQuery,
-  SIGNUP_USER_MUTATION
-} from "./auth.graphql";
-import { catchError, map, mergeMap, tap } from "rxjs/operators";
-import { StorageKeys } from "../../storage-keys";
-import { Router } from "@angular/router";
-import { Base64 } from "js-base64";
-import { User } from "../models/user.model";
-import { ApolloConfigModule } from "../../apollo-config.module";
+import {Injectable} from "@angular/core";
+import {Observable, of, ReplaySubject, throwError} from "rxjs";
+import {Apollo} from "apollo-angular";
+import {AUTHENTICATE_USE_MUTATION, LOGGED_IN_USER_QUERY, LoggedInUserQuery, SIGNUP_USER_MUTATION} from "./auth.graphql";
+import {catchError, map, mergeMap, take, tap} from "rxjs/operators";
+import {StorageKeys} from "../../storage-keys";
+import {Router} from "@angular/router";
+import {Base64} from "js-base64";
+import {User} from "../models/user.model";
+import {ApolloConfigModule} from "../../apollo-config.module";
+import {UserService} from "./user.service";
 
 @Injectable({
   providedIn: "root"
@@ -27,7 +23,8 @@ export class AuthService {
   constructor(
     private apollo: Apollo,
     private router: Router,
-    private apolloConfigModule: ApolloConfigModule
+    private apolloConfigModule: ApolloConfigModule,
+    private userService: UserService
   ) {
     this.init();
   }
@@ -180,7 +177,10 @@ export class AuthService {
     isAuthenticated: boolean;
   }> {
     return this.apollo
-      .query<LoggedInUserQuery>({ query: LOGGED_IN_USER_QUERY, fetchPolicy: 'network-only' })
+      .query<LoggedInUserQuery>({
+        query: LOGGED_IN_USER_QUERY,
+        fetchPolicy: "network-only"
+      })
       .pipe(
         map(res => {
           const user = res.data.loggedInUser;
@@ -189,8 +189,20 @@ export class AuthService {
             isAuthenticated: user !== null
           };
         }),
-        mergeMap(authData => (authData.isAuthenticated) ? of(authData) : throwError(new Error("Invalid token!")))
+        mergeMap(authData =>
+          authData.isAuthenticated
+            ? of(authData)
+            : throwError(new Error("Invalid token!"))
+        )
       );
+  }
+
+  private setAuthUser(userId: string): Observable<User> {
+    return this.userService.getUserById(userId).pipe(
+      tap((user: User) => {
+        this.authUser = user;
+      })
+    );
   }
 
   private setAuthState(
@@ -199,10 +211,16 @@ export class AuthService {
   ) {
     if (authData.isAuthenticated) {
       window.localStorage.setItem(StorageKeys.AUTH_TOKEN, authData.token);
-      this.authUser = { id: authData.id };
+      this.setAuthUser(authData.id)
+        .pipe(
+          take(1),
+          tap(() => this._isAuthenticated.next(authData.isAuthenticated))
+        )
+        .subscribe();
       if (!isRefresh) {
         this.apolloConfigModule.closeWebSocketConnection();
       }
+      return;
     }
     this._isAuthenticated.next(authData.isAuthenticated);
   }

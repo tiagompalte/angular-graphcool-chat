@@ -1,0 +1,85 @@
+<mat-card class="user-profile mat-typography">
+  <mat-card-header>
+    <div class="photo">
+      <app-avatar
+        mat-card-title
+        title="Auth User"
+        src="assets/images/user-no-photo.png"
+      >
+      </app-avatar>
+      <button
+        mat-icon-button
+        color="primary"
+        class="btn-edit-user"
+        (click)="isEditing = !isEditing"
+        [disabled]="isLoading"
+      >
+        <mat-icon>edit</mat-icon>
+      </button>
+    </div>
+  </mat-card-header>
+
+  <mat-card-content>
+    <ng-container *ngIf="!isEditing; else editTemplate">
+      <h2>{{ user.name }}</h2>
+      <p>{{ user.email }}</p>
+    </ng-container>
+
+    <form #userForm="ngForm">
+      <ng-template #editTemplate>
+        <div>
+          <mat-form-field>
+            <input
+              matInput
+              required
+              minlength="5"
+              name="name"
+              type="text"
+              placeholder="Name"
+              class="text-center"
+              [(ngModel)]="user.name"
+              #name="ngModel"
+            />
+            <mat-error *ngIf="name.touched && name.hasError('required')">
+              This field is required
+            </mat-error>
+            <mat-error *ngIf="name.touched && name.hasError('minlength')">
+              Enter at least 5 characters
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div>
+          <mat-form-field>
+            <input
+              matInput
+              required
+              email
+              name="email"
+              type="email"
+              placeholder="Email"
+              class="text-center"
+              [(ngModel)]="user.email"
+              #email="ngModel"
+            />
+            <mat-error *ngIf="email.touched && email.hasError('required')">
+              This field is required
+            </mat-error>
+            <mat-error *ngIf="email.touched && email.hasError('email')">
+              Please enter a valid email address
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </ng-template>
+    </form>
+  </mat-card-content>
+</mat-card>
+
+<mat-toolbar color="primary" class="fixed-bottom">
+  <h1>Actions</h1>
+  <span class="spacer"></span>
+  <mat-spinner *ngIf="isLoading" diameter="25" strokeWidth="2"></mat-spinner>
+  <button mat-icon-button title="Save" (click)="onSave()" [disabled]="userForm.invalid || !isEditing">
+    <mat-icon>checked</mat-icon>
+  </button>
+</mat-toolbar>

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import {Component, EventEmitter, Input, OnInit, Output} from "@angular/core";
 
 @Component({
   selector: "app-dashboard-resources",
@@ -19,6 +19,11 @@ export class DashboardResourcesComponent implements OnInit {
       url: "/dashboard/chat/users",
       icon: "people",
       title: "All Users"
+    },
+    {
+      url: "/dashboard/profile",
+      icon: "person",
+      title: "Profile"
     }
   ];
 
