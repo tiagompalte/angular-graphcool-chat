@@ -1,6 +1,6 @@
-import { Injectable } from "@angular/core";
-import { HttpClient } from "@angular/common/http";
-import { take } from "rxjs/operators";
+import {Injectable} from "@angular/core";
+import {HttpClient} from "@angular/common/http";
+import {take} from "rxjs/operators";
 
 @Injectable({
   providedIn: "root"
@@ -15,11 +15,10 @@ export class AppConfigService {
   getDifference() {
     if (!this.timeDifference) {
       this.http
-        .get("http://worldclockapi.com/api/json/utc/now")
+        .get("https://time-api.now.sh/current-time")
         .pipe(take(1))
         .subscribe(res => {
-          this.timeDifference =
-            new Date(res["currentDateTime"]).getTime() - Date.now();
+          this.timeDifference = new Date(res["ISO"]).getTime() - Date.now();
         });
     }
   }
