@@ -8,7 +8,7 @@
       >
         <app-avatar
           matListAvatar
-          [src]="'assets/images/user-no-photo.png'"
+          [src]="user.getPhotoURL()"
           [title]="user.name"
           [containerStyles]="{ width: '40px', height: '40px', margin: 0 }"
         ></app-avatar>

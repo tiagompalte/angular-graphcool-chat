@@ -1,5 +1,6 @@
 import gql from "graphql-tag";
-import { Message } from "../models/message.model";
+import {Message} from "../models/message.model";
+import {FileFragment} from '../../core/services/file.graphql';
 
 export interface AllMessagesQuery {
   allMessages: Message[];
@@ -15,11 +16,15 @@ const MessageFragment = gql`
       name
       email
       createdAt
+      photo {
+        ...FileFragment
+      }
     }
     chat {
       id
     }
   }
+  ${FileFragment}
 `;
 
 export const GET_CHAT_MESSAGES_QUERY = gql`

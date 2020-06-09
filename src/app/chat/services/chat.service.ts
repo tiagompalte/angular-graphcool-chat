@@ -1,8 +1,8 @@
-import { Injectable } from "@angular/core";
-import { Observable, Subscription } from "rxjs";
-import { Chat } from "../models/chat.model";
-import { Apollo, QueryRef } from "apollo-angular";
-import { AuthService } from "../../core/services/auth.service";
+import {Injectable} from "@angular/core";
+import {Observable, Subscription} from "rxjs";
+import {Chat} from "../models/chat.model";
+import {Apollo, QueryRef} from "apollo-angular";
+import {AuthService} from "../../core/services/auth.service";
 import {
   AllChatsQuery,
   CHAT_BY_ID_OR_BY_USERS_QUERY,
@@ -12,16 +12,13 @@ import {
   USER_CHATS_QUERY,
   USER_CHATS_SUBSCRIPTION
 } from "./chat.graphql";
-import { map } from "rxjs/operators";
-import { NavigationEnd, Router } from "@angular/router";
-import {
-  AllMessagesQuery,
-  GET_CHAT_MESSAGES_QUERY,
-  USER_MESSAGES_SUBSCRIPTION
-} from "./message.graphql";
-import { Message } from "../models/message.model";
-import { UserService } from "../../core/services/user.service";
-import {BaseService} from '../../core/services/base.service';
+import {map} from "rxjs/operators";
+import {NavigationEnd, Router} from "@angular/router";
+import {AllMessagesQuery, GET_CHAT_MESSAGES_QUERY, USER_MESSAGES_SUBSCRIPTION} from "./message.graphql";
+import {Message} from "../models/message.model";
+import {UserService} from "../../core/services/user.service";
+import {BaseService} from "../../core/services/base.service";
+import {User} from "../../core/models/user.model";
 
 @Injectable({
   providedIn: "root"
@@ -51,7 +48,7 @@ export class ChatService extends BaseService {
             !this.router.url.includes("chat")
           ) {
             this.stopChatsMonitoring();
-            this.userService.stopUserMonitoring();
+            this.userService.stopUsersMonitoring();
           }
         })
       );
@@ -151,14 +148,21 @@ export class ChatService extends BaseService {
           const valueA =
             a.messages.length > 0
               ? new Date(a.messages[0].createdAt).getTime()
-              : new Date(a.createAt).getTime();
+              : new Date(a.createdAt).getTime();
           const valueB =
             b.messages.length > 0
               ? new Date(b.messages[0].createdAt).getTime()
-              : new Date(b.createAt).getTime();
+              : new Date(b.createdAt).getTime();
           return valueB - valueA;
         });
-      })
+      }),
+      map(chats =>
+        chats.map(c => {
+          const chat = new Chat(c);
+          chat.users = chat.users.map(u => new User(u));
+          return chat;
+        })
+      )
     );
   }
 
@@ -188,22 +192,21 @@ export class ChatService extends BaseService {
           targetUserId
         },
         update: (store, { data: { createChat } }) => {
-
           this.readAndWriteQuery<Chat>({
             store,
             newRecord: createChat,
             query: USER_CHATS_QUERY,
-            queryName: 'allChats',
-            arrayOperation: 'unshift',
-            variables: {loggedUserId: this.authService.authUser.id}
+            queryName: "allChats",
+            arrayOperation: "unshift",
+            variables: { loggedUserId: this.authService.authUser.id }
           });
 
           this.readAndWriteQuery<Chat>({
             store,
             newRecord: createChat,
             query: CHAT_BY_ID_OR_BY_USERS_QUERY,
-            queryName: 'allChats',
-            arrayOperation: 'singleRecord',
+            queryName: "allChats",
+            arrayOperation: "singleRecord",
             variables: {
               chatId: targetUserId,
               loggedUserId: this.authService.authUser.id,
@@ -218,6 +221,7 @@ export class ChatService extends BaseService {
   createGroup(variables: {
     title: string;
     usersIds: string[];
+    photoId: string;
   }): Observable<Chat> {
     variables.usersIds.push(this.authService.authUser.id);
     return this.apollo
@@ -227,37 +231,45 @@ export class ChatService extends BaseService {
           ...variables,
           loggedUserId: this.authService.authUser.id
         },
-        optimisticResponse:{
-          __typename: 'Mutation',
+        optimisticResponse: {
+          __typename: "Mutation",
           createChat: {
-            __typename: 'Chat',
-            id: '',
+            __typename: "Chat",
+            id: "",
             title: variables.title,
             createdAt: new Date().toISOString(),
             isGroup: true,
+            photo: {
+              __typename: 'File',
+              id: '',
+              secret: ''
+            },
             users: [
               {
-                __typename: 'User',
-                id: '',
-                name: '',
-                email: '',
-                createdAt: new Date().toISOString()
+                __typename: "User",
+                id: "",
+                name: "",
+                email: "",
+                createdAt: new Date().toISOString(),
+                photo: {
+                  __typename: 'File',
+                  id: '',
+                  secret: ''
+                }
               }
             ],
             messages: []
           }
         },
         update: (store, { data: { createChat } }) => {
-
           this.readAndWriteQuery<Chat>({
             store,
             newRecord: createChat,
             query: USER_CHATS_QUERY,
-            queryName: 'allChats',
-            arrayOperation: 'unshift',
-            variables: {loggedUserId: this.authService.authUser.id}
+            queryName: "allChats",
+            arrayOperation: "unshift",
+            variables: { loggedUserId: this.authService.authUser.id }
           });
-
         }
       })
       .pipe(map(res => res.data.createChat));

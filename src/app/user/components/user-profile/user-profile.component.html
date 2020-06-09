@@ -3,8 +3,8 @@
     <div class="photo">
       <app-avatar
         mat-card-title
-        title="Auth User"
-        src="assets/images/user-no-photo.png"
+        [title]="user.name"
+        [src]="user.getPhotoURL()"
       >
       </app-avatar>
       <button
@@ -15,6 +15,10 @@
         [disabled]="isLoading"
       >
         <mat-icon>edit</mat-icon>
+      </button>
+      <input type="file" accept="image/*" [hidden]="true" #inputFile (change)="onSelectImage($event)">
+      <button mat-icon-button color="primary" class="btn-choose-photo" (click)="triggerInputFile(inputFile)">
+        <mat-icon>camera_alt</mat-icon>
       </button>
     </div>
   </mat-card-header>
